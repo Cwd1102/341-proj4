@@ -30,24 +30,183 @@ void CarDB::changeProbPolicy(prob_t policy) {
 }
 
 bool CarDB::insert(Car car) {
+    // Calculate the hash value
+    int hashValue = m_hash(car.m_model) % m_currentCap;
 
+    // Handle hash collisions using the specified probing policy
+    int probeCount = 0;
+    int increment = 1;
+    while (m_currentTable[hashValue].m_model != "") {
+        if (m_currentTable[hashValue] == car) {
+            return false; // Car object already exists in the hash table
+        }
+
+        // Increment the hash value based on the probing policy
+        switch (m_currProbing) {
+        case QUADRATIC:
+            hashValue = (hashValue + increment * increment) % m_currentCap;
+            break;
+        case DOUBLEHASH:
+            hashValue = (hashValue + increment * m_hash(car.m_model)) % m_currentCap;
+            break;
+        }
+
+        // Increment the probe count and update the increment value
+        probeCount++;
+        increment = probeCount * probeCount;
+    }
+
+    // Insert the Car object into the hash table
+    m_currentTable[hashValue] = car;
+
+    // Check if rehashing is required
+    if (probeCount >= m_currentCap / 4) {
+        // Create a new table with increased capacity
+        int newCap = m_currentCap * 2;
+        Car* newTable = new Car[newCap];
+
+        // Transfer the data from the old table to the new table
+        int transferCount = 0;
+        for (int i = 0; i < m_currentCap; i++) {
+            if (m_currentTable[i].m_model != "") {
+                int newHashValue = m_hash(m_currentTable[i].m_model) % newCap;
+                while (newTable[newHashValue].m_model != "") {
+                    newHashValue = (newHashValue + 1) % newCap;
+                }
+                newTable[newHashValue] = m_currentTable[i];
+                transferCount++;
+                if (transferCount == m_currentCap / 4) {
+                    break;
+                }
+            }
+        }
+
+        // Update the member variables
+        delete[] m_oldTable;
+        m_oldTable = m_currentTable;
+        m_oldCap = m_currentCap;
+        m_currentTable = newTable;
+        m_currentCap = newCap;
+    }
+
+    return true; // Car object successfully inserted into the hash table
 }
+
 
 bool CarDB::remove(Car car) {
+    // Find the bucket of the object using the proper probing policy
+    int hashValue = m_hash(car.m_model) % m_currentCap;
+    int probeCount = 0;
+    int increment = 1;
+    while (m_currentTable[hashValue].m_model != "") {
+        if (m_currentTable[hashValue] == car) {
+            // Tag the bucket as deleted
+            m_currentTable[hashValue].m_used = true;
+            return true; // Car object found and deleted
+        }
 
+        // Increment the hash value based on the probing policy
+        switch (m_currProbing) {
+        case QUADRATIC:
+            hashValue = (hashValue + increment * increment) % m_currentCap;
+            break;
+        case DOUBLEHASH:
+            hashValue = (hashValue + increment * m_hash(car.m_model)) % m_currentCap;
+            break;
+        }
+
+        // Increment the probe count and update the increment value
+        probeCount++;
+        increment = probeCount * probeCount;
+    }
+
+    return false; // Car object not found
 }
+
 
 Car CarDB::getCar(string model, int dealer) const {
+    // Search the current table
+    int hashValue = m_hash(model) % m_currentCap;
+    int probeCount = 0;
+    int increment = 1;
+    while (m_currentTable[hashValue].m_model != "") {
+        if (m_currentTable[hashValue].m_model == model && m_currentTable[hashValue].m_dealer == dealer) {
+            return m_currentTable[hashValue]; // Car object found in the current table
+        }
 
+        // Increment the hash value based on the probing policy
+        switch (m_currProbing) {
+        case QUADRATIC:
+            hashValue = (hashValue + increment * increment) % m_currentCap;
+            break;
+        case DOUBLEHASH:
+            hashValue = (hashValue + increment * m_hash(model)) % m_currentCap;
+            break;
+        }
+
+        // Increment the probe count and update the increment value
+        probeCount++;
+        increment = probeCount * probeCount;
+    }
+
+    // Search the old table if it exists
+    if (m_oldTable != nullptr) {
+        hashValue = m_hash(model) % m_oldCap;
+        probeCount = 0;
+        increment = 1;
+        while (m_oldTable[hashValue].m_model != "") {
+            if (m_oldTable[hashValue].m_model == model && m_oldTable[hashValue].m_dealer == dealer) {
+                return m_oldTable[hashValue]; // Car object found in the old table
+            }
+
+            // Increment the hash value based on the probing policy
+            switch (m_currProbing) {
+            case QUADRATIC:
+                hashValue = (hashValue + increment * increment) % m_oldCap;
+                break;
+            case DOUBLEHASH:
+                hashValue = (hashValue + increment * m_hash(model)) % m_oldCap;
+                break;
+            }
+
+            // Increment the probe count and update the increment value
+            probeCount++;
+            increment = probeCount * probeCount;
+        }
+    }
+
+    // Car object not found in both tables, return empty object
+    return Car();
 }
+
 
 float CarDB::lambda() const {
-
+    float occupiedBuckets = 0;
+    for (int i = 0; i < m_currentCap; i++) {
+        if (m_currentTable[i].m_model != "" || m_currentTable[i].m_used) {
+            occupiedBuckets++;
+        }
+    }
+    float loadFactor = occupiedBuckets / m_currentCap;
+    return loadFactor;
 }
+
 
 float CarDB::deletedRatio() const {
-
+    float deletedBuckets = 0;
+    float occupiedBuckets = 0;
+    for (int i = 0; i < m_currentCap; i++) {
+        if (m_currentTable[i].m_model != "" && m_currentTable[i].m_used) {
+            deletedBuckets++;
+        }
+        if (m_currentTable[i].m_model != "" || m_currentTable[i].m_used) {
+            occupiedBuckets++;
+        }
+    }
+    float ratio = deletedBuckets / occupiedBuckets;
+    return ratio;
 }
+
 
 void CarDB::dump() const {
     cout << "Dump for the current table: " << endl;
@@ -63,6 +222,7 @@ void CarDB::dump() const {
 }
 
 bool CarDB::updateQuantity(Car car, int quantity) {
+	return false;
 
 }
 
