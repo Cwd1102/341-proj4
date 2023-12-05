@@ -174,38 +174,52 @@ int main() {
     return 0;
 }
 
-
 bool Tester::testInsert() {
-    vector<Car> dataList;
-    Random RndID(MINID, MAXID);
-    Random RndCar(0, 4);// selects one from the carModels array
-    Random RndQuantity(0, 50);
-    CarDB cardb(MINPRIME, hashCode, DOUBLEHASH);
-    bool result = true;
-    bool result1 = true;
-    bool sizeCheck = false;
-    bool nonCollidingDataPoint = false;
-    bool multipleKeys = false;
+    cout << "Testing insert function with non-colliding keys..." << endl;
 
-    for (int i = 0; i < 99; i++) {
-		Car temp(carModels[RndCar.getRandNum()], RndQuantity.getRandNum(), RndID.getRandNum(), true);
-		dataList.push_back(temp);
-		cardb.insert(temp);
-	}
-    for (int i = 0; i < 99; i++) {
-        if (cardb.m_currentTable[i].m_model == "") {
-            nonCollidingDataPoint = true;
-			break;
-		}
-	}
+    // Create a CarDB object with a small size for testing
+    CarDB carDB(10, hashCode, DEFPOLCY);
 
-    if (nonCollidingDataPoint && result1) {
-        return true;
+    // Create some non-colliding Car objects for testing
+    Car car1("challenger", 5, 1001);
+    Car car2("stratos", 3, 1002);
+    Car car3("gt500", 7, 1003);
+
+    // Insert Car objects into the CarDB
+    if (carDB.insert(car1) && carDB.insert(car2) && carDB.insert(car3)) {
+        // Check if the size and load factor are correct after insertions
+        if (carDB.deletedRatio() == 0.0 &&
+            carDB.getCar("challenger", 1001) == car1 && carDB.getCar("stratos", 1002) == car2 &&
+            carDB.getCar("gt500", 1003) == car3) {
+        }
+        else {
+            return false;
+        }
     }
     else {
         return false;
     }
+
+    // Create more non-colliding Car objects for testing
+    Car car4("miura", 2, 1004);
+    Car car5("x101", 1, 1005);
+
+    // Insert additional Car objects into the CarDB
+    if (carDB.insert(car4) && carDB.insert(car5)) {
+        // Check if the size and load factor are correct after insertions
+        if (carDB.deletedRatio() == 0.0 &&
+            carDB.getCar("miura", 1004) == car4 && carDB.getCar("x101", 1005) == car5) {
+            return true;
+        }
+        else {
+        }
+    }
+    else {
+    }
+
+    return false;
 }
+
 
 bool Tester::testGetCarError() {
     	vector<Car> dataList;
