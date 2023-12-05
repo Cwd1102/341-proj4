@@ -74,7 +74,7 @@ public:
     // insert only happens in the new table
     bool insert(Car car);
     // remove can happen from either table
-    bool remove(Car car);
+    bool remove(Car &car);
     // find can happen in either table
     Car getCar(string model, int dealer) const;
     // update the information
@@ -107,6 +107,9 @@ private:
     /******************************************
     * Private function declarations go here! *
     ******************************************/
+    int findCar(Car car) const;
+    void reHash();
+    int insertHelper(Car* table, int cap, Car car, prob_t probing) const;
 
 };
 #endif
