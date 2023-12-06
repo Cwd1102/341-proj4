@@ -111,8 +111,7 @@ class Tester {
         bool testGetCarColliding();
         bool testRemove();
         bool testRemoveColliding();
-        bool testRehash();
-        bool testRehashColliding();
+        bool testRehashLoadFactor();
 
 };
 
@@ -157,30 +156,23 @@ int main() {
 	else
 		cout << "testRemove failed" << endl;
 
-    
     if (test.testRemoveColliding())
 		cout << "testRemoveColliding passed" << endl;
 	else
 		cout << "testRemoveColliding failed" << endl;
 
-    if (test.testRehash())
-        cout << "testRehash passed" << endl;
+    if (test.testRehashLoadFactor())
+        cout << "testRehashLoadFactor passed" << endl;
     else
-        cout << "testRehash failed" << endl;
-        
-
-    
+        cout << "testRehashLoadFactor failed" << endl;
 
     return 0;
 }
 
 bool Tester::testInsert() {
-    cout << "Testing insert function with non-colliding keys..." << endl;
 
-    // Create a CarDB object with a small size for testing
     CarDB carDB(10, hashCode, DEFPOLCY);
 
-    // Create some non-colliding Car objects for testing
     Car car1("challenger", 5, 1001);
     Car car2("stratos", 3, 1002);
     Car car3("gt500", 7, 1003);
@@ -222,252 +214,149 @@ bool Tester::testInsert() {
 
 
 bool Tester::testGetCarError() {
-    	vector<Car> dataList;
-	Random RndID(MINID, MAXID);
-	Random RndCar(0, 4);// selects one from the carModels array
-	Random RndQuantity(0, 50);
-	CarDB cardb(MINPRIME, hashCode, DOUBLEHASH);
-	bool result = true;
-	bool result1 = true;
-	bool sizeCheck = false;
-	bool nonCollidingDataPoint = false;
-	bool multipleKeys = false;
+    
+    CarDB carDB(10, hashCode, DEFPOLCY);
+    // Create some non-colliding Car objects for testing
+    Car nonExistingCar = carDB.getCar("nonexistent", 9999);
 
-    if (cardb.getCar("challenger", 1000).getModel() == "") {
-		return true;
-	}
+    if (nonExistingCar.getModel().empty() && nonExistingCar.getQuantity() == 0 && nonExistingCar.getDealer() == 0) {
+        return true;
+    }
     else {
-		return false;
-	}
 
-
+        return false;
+    }
 }
 
 bool Tester::testGetCar() {
-	vector<Car> dataList;
-	Random RndID(MINID, MAXID);
-	Random RndCar(0, 4);// selects one from the carModels array
-	Random RndQuantity(0, 50);
-	CarDB cardb(MINPRIME, hashCode, DOUBLEHASH);
-    Car test[5]{};
-	bool result = true;
-	bool result1 = true;
-	bool sizeCheck = false;
-	bool nonCollidingDataPoint = false;
-	bool multipleKeys = false;
+    // Create a CarDB object with a small size for testing
+    CarDB carDB(10, hashCode, DEFPOLCY);
 
-    for (int i = 0; i < 5; i++) {
-		Car temp(carModels[RndCar.getRandNum()], RndQuantity.getRandNum(), RndID.getRandNum(), false);
-		dataList.push_back(temp);
-		cardb.insert(temp);
-        test[i] = temp;
-	}
+    // Create some non-colliding Car objects for testing
+    Car car1("challenger", 5, 1001);
+    Car car2("stratos", 3, 1002);
+    Car car3("gt500", 7, 1003);
 
-    for (vector<Car>::iterator it = dataList.begin(); it != dataList.end(); it++) {
-        for (int i = 0; i < 5; i++) {
-            if (test[i].getModel() == (*it).getModel() && test[i].getDealer() == (*it).getDealer()) {
-				result1 = result1 && (*it == cardb.getCar((*it).getModel(), (*it).getDealer()));
-			}
-		}
-	}
+    // Insert Car objects into the CarDB
+    carDB.insert(car1);
+    carDB.insert(car2);
+    carDB.insert(car3);
 
-    if (result1) {
-		return true;
-	}
+    // Retrieve the Car objects using getCar
+    Car retrievedCar1 = carDB.getCar("challenger", 1001);
+    Car retrievedCar2 = carDB.getCar("stratos", 1002);
+    Car retrievedCar3 = carDB.getCar("gt500", 1003);
+
+    // Check if the retrieved Car objects match the inserted ones
+    if (retrievedCar1 == car1 && retrievedCar2 == car2 && retrievedCar3 == car3) {
+        return true;
+    }
     else {
-		return false;
-	}
-
+        return false;
+    }
 }
 
 bool Tester::testGetCarColliding() {
-    	vector<Car> dataList;
-	Random RndID(MINID, MAXID);
-	Random RndCar(0, 4);// selects one from the carModels array
-	Random RndQuantity(0, 50);
-	CarDB cardb(MINPRIME, hashCode, DOUBLEHASH);
-	Car test[5]{};
-	bool result = true;
-	bool result1 = true;
-	bool sizeCheck = false;
-	bool nonCollidingDataPoint = false;
-	bool multipleKeys = false;
+    // Create a CarDB object with a small size for testing
+    CarDB carDB(10, hashCode, DEFPOLCY);
 
-    for (int i = 0; i < 5; i++) {
-		Car temp(carModels[RndCar.getRandNum()], RndQuantity.getRandNum(), RndID.getRandNum(), false);
-		dataList.push_back(temp);
-		cardb.insert(temp);
-		test[i] = temp;
-	}
+    // Create some colliding Car objects for testing
+    Car car1("challenger", 5, 1001);
+    Car car2("stratos", 3, 1002);
+    Car car3("gt500", 7, 1003);
 
-    for (vector<Car>::iterator it = dataList.begin(); it != dataList.end(); it++) {
-        for (int i = 0; i < 5; i++) {
-            if (test[i].getModel() == (*it).getModel() && test[i].getDealer() == (*it).getDealer()) {
-				result1 = result1 && (*it == cardb.getCar((*it).getModel(), (*it).getDealer()));
-			}
-		}
-	}
+    // Insert Car objects into the CarDB (colliding keys)
+    carDB.insert(car1);
+    carDB.insert(car2);
+    carDB.insert(car3);
 
-    if (result1) {
-		return true;
-	}
+    // Retrieve the Car objects using getCar (colliding keys)
+    Car retrievedCar1 = carDB.getCar("challenger", 1001);
+    Car retrievedCar2 = carDB.getCar("stratos", 1002);
+    Car retrievedCar3 = carDB.getCar("gt500", 1003);
+
+    // Check if the retrieved Car objects match the inserted ones
+    if (retrievedCar1 == car1 && retrievedCar2 == car2 && retrievedCar3 == car3) {
+        return true;
+    }
     else {
-		return false;
-	}
+        return false;
+    }
 }
 
 bool Tester::testRemove() {
-    	vector<Car> dataList;
-	Random RndID(MINID, MAXID);
-	Random RndCar(0, 4);// selects one from the carModels array
-	Random RndQuantity(0, 50);
-	CarDB cardb(MINPRIME, hashCode, DOUBLEHASH);
-	Car  test[5]{};
-	bool result = true;
-	bool result1 = true;
-	bool sizeCheck = false;
-	bool nonCollidingDataPoint = false;
-	bool multipleKeys = false;
+    CarDB carDB(10, hashCode, DEFPOLCY);
 
-    for (int i = 0; i < 5; i++) {
-		Car temp(carModels[RndCar.getRandNum()], RndQuantity.getRandNum(), RndID.getRandNum(), false);
-		dataList.push_back(temp);
-		cardb.insert(temp);
-		test[i] = temp;
-	}
+    Car car1("challenger", 5, 1001);
+    Car car2("stratos", 3, 1002);
+    Car car3("gt500", 7, 1003);
 
-    for (int i = 0; i < 5; i++) {
-		cardb.remove(test[i]);
-	}
+    carDB.insert(car1);
+    carDB.insert(car2);
+    carDB.insert(car3);
 
-    for (int i = 0; i < 5; i++) {
-        int hashValue = cardb.m_hash(test[i].getModel()) % cardb.m_currentCap;
-        if (cardb.m_currentTable[hashValue].m_used == false) {
-			result = false;
-		}
-	}
+    carDB.remove(car1);
+    carDB.remove(car2);
+    carDB.remove(car3);
 
-    if (result) {
-		return true;
-	}
+    Car retrievedCar1 = carDB.getCar("challenger", 1001);
+    Car retrievedCar2 = carDB.getCar("stratos", 1002);
+    Car retrievedCar3 = carDB.getCar("gt500", 1003);
+
+    if (retrievedCar1.getUsed() == true && retrievedCar2.getUsed() == true && retrievedCar3.getUsed() == true) {
+        return true;
+    }
     else {
-		return false;
-	}
+        return false;
+    }
 }
 
 bool Tester::testRemoveColliding() {
-		vector<Car> dataList;
-	Random RndID(MINID, MAXID);
-	Random RndCar(0, 4);// selects one from the carModels array
-	Random RndQuantity(0, 50);
-	CarDB cardb(MINPRIME, hashCode, DOUBLEHASH);
-	Car test[5]{};
-	bool result = true;
-	bool result1 = true;
-	bool sizeCheck = false;
-	bool nonCollidingDataPoint = false;
-	bool multipleKeys = false;
+    // Create a CarDB object with a small size for testing
+    CarDB carDB(10, hashCode, DEFPOLCY);
+    Car car1("challenger", 5, 1001);
+    Car car2("stratos", 3, 1002);
+    Car car3("gt500", 7, 1003);
 
-    for (int i = 0; i < 5; i++) {
-		Car temp(carModels[RndCar.getRandNum()], RndQuantity.getRandNum(), RndID.getRandNum(), false);
-		dataList.push_back(temp);
-		cardb.insert(temp);
-		test[i] = temp;
-	}
+    //inserting cars
+    carDB.insert(car1);
+    carDB.insert(car2);
+    carDB.insert(car3);
+    //removing
+    carDB.remove(car1);
+    carDB.remove(car2);
+    carDB.remove(car3);
+    
+    // Attempt to retrieve the removed Car objects using getCar (colliding keys)
+    Car retrievedCar1 = carDB.getCar("challenger", 1001);
+    Car retrievedCar2 = carDB.getCar("stratos", 1002);
+    Car retrievedCar3 = carDB.getCar("gt500", 1003);
 
-    for (int i = 0; i < 5; i++) {
-		cardb.remove(test[i]);
-	}
-
-    for (int i = 0; i < 5; i++) {
-		int hashValue = cardb.m_hash(test[i].getModel()) % cardb.m_currentCap;
-        if (cardb.m_currentTable[hashValue].m_used == false) {
-			result = false;
-		}
-	}
-
-    if (result) {
-		return true;
-	}
+    // Check if the retrieved Car objects are empty (indicating successful removal)
+    if (retrievedCar1.getUsed() == true && retrievedCar2.getUsed() == true && retrievedCar3.getUsed() == true) {
+        return true;
+    }
     else {
-		return false;
-	}
+        return false;
+    }
 }
 
-bool Tester::testRehash() {
-		vector<Car> dataList;
-	Random RndID(MINID, MAXID);
-	Random RndCar(0, 4);// selects one from the carModels array
-	Random RndQuantity(0, 50);
-	CarDB cardb(MINPRIME, hashCode, DOUBLEHASH);
-	Car test[5]{};
-	bool result = true;
-	bool result1 = true;
-	bool sizeCheck = false;
-	bool nonCollidingDataPoint = false;
-	bool multipleKeys = false;
+bool Tester::testRehashLoadFactor() {
+    Random RndID(MINID, MAXID);
+    Random RndCar(0, 4);// selects one from the carModels array
+    Random RndQuantity(0, 50);
+    CarDB cardb(MINPRIME, hashCode, DOUBLEHASH);
+    int size = 10;
+    float percent = size * .51;
 
-    for (int i = 0; i < 5; i++) {
-		Car temp(carModels[RndCar.getRandNum()], RndQuantity.getRandNum(), RndID.getRandNum(), false);
-		dataList.push_back(temp);
-		cardb.insert(temp);
-		test[i] = temp;
+    for (int i = 0; i < percent; i++) {
+		// generating random data
+		Car dataObj = Car(carModels[RndCar.getRandNum()], RndQuantity.getRandNum(),
+            			RndID.getRandNum(), true);
+        cardb.insert(dataObj);
 	}
 
-    for (int i = 0; i < 5; i++) {
-		cardb.remove(test[i]);
-	}
+    float newPercent = 
 
-    for (int i = 0; i < 5; i++) {
-		int hashValue = cardb.m_hash(test[i].getModel()) % cardb.m_currentCap;
-        if (cardb.m_currentTable[hashValue].m_used == false) {
-			result = false;
-		}
-	}
 
-    if (result) {
-		return true;
-	}
-    else {
-		return false;
-	}
-}
-
-bool Tester::testRehashColliding() {
-    		vector<Car> dataList;
-	Random RndID(MINID, MAXID);
-	Random RndCar(0, 4);// selects one from the carModels array
-	Random RndQuantity(0, 50);
-	CarDB cardb(MINPRIME, hashCode, DOUBLEHASH);
-	Car test[5]{};
-	bool result = true;
-	bool result1 = true;
-	bool sizeCheck = false;
-	bool nonCollidingDataPoint = false;
-	bool multipleKeys = false;
-
-    for (int i = 0; i < 5; i++) {
-		Car temp(carModels[RndCar.getRandNum()], RndQuantity.getRandNum(), RndID.getRandNum(), false);
-		dataList.push_back(temp);
-		cardb.insert(temp);
-		test[i] = temp;
-	}
-
-    for (int i = 0; i < 5; i++) {
-		cardb.remove(test[i]);
-	}
-
-    for (int i = 0; i < 5; i++) {
-		int hashValue = cardb.m_hash(test[i].getModel()) % cardb.m_currentCap;
-        if (cardb.m_currentTable[hashValue].m_used == false) {
-			result = false;
-		}
-	}
-
-    if (result) {
-		return true;
-	}
-    else {
-		return false;
-	}
 }

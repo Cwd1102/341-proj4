@@ -109,7 +109,8 @@ private:
     ******************************************/
     int findCar(Car car) const;
     void reHash();
-    int insertHelper(Car* table, int cap, Car car, prob_t probing) const;
+    int insertHelper(Car car) const;
+    void insertRehash(Car car);
 
 };
 #endif

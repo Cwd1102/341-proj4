@@ -13,13 +13,21 @@ CarDB::CarDB(int size, hash_fn hash, prob_t probing = DEFPOLCY) {
         capacity = findNextPrime(capacity);
     }
 
-    // Set the member variables
-    m_currentCap = capacity;
-    m_currentTable = new Car[m_currentCap]{ EMPTY };
-    m_oldCap = 0;
-    m_oldTable = nullptr;
-    m_hash = hash;
-    m_currProbing = probing;
+    m_hash = hash;    // hash function
+    m_newPolicy = probing;     // stores the change of policy request
+    m_currentCap = capacity;    // hash table size (capacity)
+    m_currentTable = new Car[m_currentCap]{ EMPTY };  // hash table
+    m_currentSize = 0;   // current number of entries
+    // m_currentSize includes deleted entries 
+    m_currNumDeleted = 0;// number of deleted entries
+    m_currProbing = probing;       // collision handling policy
+
+    m_oldTable = 0;      // hash table
+    m_oldCap = 0;        // hash table size (capacity)
+    m_oldSize = 0;       // current number of entries
+    // m_oldSize includes deleted entries
+    m_oldNumDeleted = 0; // number of deleted entries
+     m_oldProbing = probing;    // collision handling policy
 }
 CarDB::~CarDB() {
 	// Delete the current table
@@ -42,13 +50,12 @@ void CarDB::changeProbPolicy(prob_t policy) {
 }
 
 bool CarDB::insert(Car car) {
-    // If the load factor is greater than 0.5, rehash the table
-     	if (lambda() > 0.5) {
-            m_newPolicy = m_currProbing;
-     		reHash();
-    	}
 	// Insert the object into the current table
-	int index = insertHelper(m_currentTable, m_currentCap, car, m_currProbing);
+	int index = insertHelper(car);
+
+    if (lambda() > 0.5) {
+        reHash();
+    }
 
 	// If the object was inserted successfully, increment the current size
     if (index != -1) {
@@ -74,10 +81,11 @@ bool CarDB::remove(Car &car) {
         }
 
         // Increment the hash value based on the probing policy
-        if(m_currProbing == QUADRATIC)
+        if (m_currProbing == QUADRATIC)
             hashValue = (hashValue + increment * increment) % m_currentCap;
         else
-            hashValue = (((hashValue + increment * m_hash(car.m_model)) % m_currentCap));
+            hashValue = (hashValue + increment * (11 - (hashValue % 11))) % m_currentCap;
+
         
 
         // Increment the probe count and update the increment value
@@ -92,7 +100,8 @@ Car CarDB::getCar(string model, int dealer) const {
     // Search the current table
     int hashValue = m_hash(model) % m_currentCap;
     int probeCount = 0;
-    int increment = 1;
+    int increment = 0;
+
     while (m_currentTable[hashValue].m_model != "") {
         if (m_currentTable[hashValue].m_model == model && m_currentTable[hashValue].m_dealer == dealer) {
             return m_currentTable[hashValue]; // Car object found in the current table
@@ -102,7 +111,8 @@ Car CarDB::getCar(string model, int dealer) const {
         if (m_currProbing == QUADRATIC)
             hashValue = (hashValue + increment * increment) % m_currentCap;
         else
-            hashValue = (((hashValue + increment * m_hash(model)) % m_currentCap));
+            hashValue = (hashValue + increment * (11 - (hashValue % 11))) % m_currentCap;
+
 
         // Increment the probe count and update the increment value
         increment++;
@@ -122,7 +132,7 @@ Car CarDB::getCar(string model, int dealer) const {
             if (m_currProbing == QUADRATIC)
                 hashValue = (hashValue + increment * increment) % m_currentCap;
             else
-                hashValue = (((hashValue + increment * m_hash(model)) % m_currentCap));
+                hashValue = (hashValue + increment * (11 - (hashValue % 11))) % m_currentCap;
 
 
             // Increment the probe count and update the increment value
@@ -180,13 +190,11 @@ bool CarDB::updateQuantity(Car car, int quantity) {
 			return true; // Car object found and updated
 		}
 
-		// Increment the hash value based on the probing polic
-        if(m_currProbing == QUADRATIC)
-			hashValue = (hashValue + increment * increment) % m_currentCap;
+        if (m_currProbing == QUADRATIC)
+            hashValue = (hashValue + increment * increment) % m_currentCap;
         else
-			hashValue = (hashValue + increment * m_hash(car.m_model)) % m_currentCap;
+            hashValue = (hashValue + increment * (11 - (hashValue % 11))) % m_currentCap;
 
-		// Increment the probe count and update the increment value
         increment++;
 	}
 
@@ -240,34 +248,28 @@ bool operator==(const Car& lhs, const Car& rhs) {
 //************************** Private Helper Below ********************************
 //********************************************************************************
 
-int CarDB::insertHelper(Car* table, int cap, Car car, prob_t probing) const{
+int CarDB::insertHelper(Car car) const{
 	// Find the bucket of the object using the proper probing policy
-	int hashValue = m_hash(car.m_model) % cap;
-	int probeCount = 0;
-	int increment = 1;
-    int testInc = 0;
+	int hashValue = m_hash(car.m_model) % m_currentCap;
+	int increment = 0;
 
-    if (m_currProbing == NONE) {
-        return -1;
-    }
-
-    while (table[hashValue].getUsed() == true) {
-       
+    while (m_currentTable[hashValue].getUsed() == true) {
+        if (m_currProbing == NONE) {
+            return -1;
+        }
 		// Increment the hash value based on the probing policy
-        if(probing == QUADRATIC)
-			hashValue = (hashValue + increment * increment) % cap;
+        if(m_currProbing == QUADRATIC)
+			hashValue = (hashValue + increment * increment) % m_currentCap;
         else
-			hashValue = (hashValue + increment * (11 - (hashValue % 11))) % cap;
+			hashValue = (hashValue + increment * (11 - (hashValue % 11))) % m_currentCap;
 		// Increment the probe count and update the increment value
         increment++;
-        
-
 	}
     
 
 	// Insert the object into the table
 
-	table[hashValue] = car;
+	m_currentTable[hashValue] = car;
 	return hashValue;
 }
 
@@ -303,16 +305,12 @@ void CarDB::reHash() {
     percent = m_oldSize * .25;
     int count = 0;
 
-    while(ifBreak){
-        if (m_oldTable[increment].getUsed() == true) {
-            insert(m_oldTable[increment]);
-            m_oldTable[increment].m_used = false;
-            if (count == percent) {
-                ifBreak = false;
-            }
-            count++;
+    for(int i =0; i < m_oldCap; i++) {
+        if (m_oldTable[i].getUsed() == true) {
+            insertRehash(m_oldTable[i]);
+            m_oldTable[i].m_used = false;
+            m_oldNumDeleted++;
         }
-        increment++;
 	}
 
     if (m_oldNumDeleted == m_oldSize) {
@@ -369,4 +367,31 @@ int CarDB::findCar(Car car) const {
 
 	// Car object not found in both tables, return -1
 	return -1;
+}
+
+void CarDB::insertRehash(Car car) {
+    // Find the bucket of the object using the proper probing policy
+    int hashValue = m_hash(car.m_model) % m_currentCap;
+    int probeCount = 0;
+    int increment = 1;
+
+    if (m_currProbing == NONE) {
+        return;
+    }
+
+    while (m_currentTable[hashValue].getUsed() == true) {
+
+        // Increment the hash value based on the probing policy
+        if (m_currProbing == QUADRATIC)
+            hashValue = (hashValue + increment * increment) % m_currentCap;
+        else
+            hashValue = (hashValue + increment * (11 - (hashValue % 11))) % m_currentCap;
+        // Increment the probe count and update the increment value
+        increment++;
+
+
+    }
+
+    // Insert the object into the table
+    m_currentTable[hashValue] = car;
 }
