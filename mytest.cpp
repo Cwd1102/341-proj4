@@ -111,7 +111,6 @@ class Tester {
         bool testGetCarColliding();
         bool testRemove();
         bool testRemoveColliding();
-        bool testRehashLoadFactor();
 
 };
 
@@ -161,10 +160,6 @@ int main() {
 	else
 		cout << "testRemoveColliding failed" << endl;
 
-    if (test.testRehashLoadFactor())
-        cout << "testRehashLoadFactor passed" << endl;
-    else
-        cout << "testRehashLoadFactor failed" << endl;
 
     return 0;
 }
@@ -339,24 +334,4 @@ bool Tester::testRemoveColliding() {
     else {
         return false;
     }
-}
-
-bool Tester::testRehashLoadFactor() {
-    Random RndID(MINID, MAXID);
-    Random RndCar(0, 4);// selects one from the carModels array
-    Random RndQuantity(0, 50);
-    CarDB cardb(MINPRIME, hashCode, DOUBLEHASH);
-    int size = 10;
-    float percent = size * .51;
-
-    for (int i = 0; i < percent; i++) {
-		// generating random data
-		Car dataObj = Car(carModels[RndCar.getRandNum()], RndQuantity.getRandNum(),
-            			RndID.getRandNum(), true);
-        cardb.insert(dataObj);
-	}
-
-    float newPercent = 
-
-
 }

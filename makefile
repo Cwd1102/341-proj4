@@ -1,14 +1,14 @@
 CXX = g++
 CXXFLAGS = -Wall -g
 
-driver: dealer.h dealer.cpp driver.cpp
-	$(CXX) $(CXXFLAGS) dealer.h dealer.cpp driver.cpp -o driver
+mytest: dealer.h dealer.cpp mytest.cpp
+	$(CXX) $(CXXFLAGS) dealer.h dealer.cpp mytest.cpp -o mytest
 
 clean:
-	rm driver
+	rm mytest
 
 run:
-	./driver
+	./mytest
 
 val:
-	valgrind --track-origins=yes -s --leak-check=full ./driver
+	valgrind --track-origins=yes -s --leak-check=full ./mytest
